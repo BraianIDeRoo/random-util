@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020 Braian I. De Roo
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package braianideroo.random
 
 import zio.{Has, Layer, ZLayer}
@@ -99,7 +115,7 @@ object SeedRandomSpec extends DefaultRunnableSpec {
       testM(
         "can't generate doubles if the first value is greater than the second"
       )(for {
-        res1 <- random.between(0.5D, 0D)
+        _ <- random.between(0.5D, 0D)
       } yield assert(true)(equalTo(true))) @@ failure,
       testM("can generate floats in a range")(for {
         res1 <- random.between(0F, 0.5F)
@@ -107,16 +123,16 @@ object SeedRandomSpec extends DefaultRunnableSpec {
       testM(
         "can't generate floats if the first value is greater than the second"
       )(for {
-        res1 <- random.between(0.5F, 0F)
+        _ <- random.between(0.5F, 0F)
       } yield assert(true)(equalTo(true))) @@ failure,
       testM("can generate ints in a range between 0 and N")(for {
         res1 <- random.nextInt(10)
       } yield assert(res1)(equalTo(6))),
       testM("can't generate ints if the bound is equal zero")(for {
-        res1 <- random.nextInt(0)
+        _ <- random.nextInt(0)
       } yield assert(true)(equalTo(true))) @@ failure,
       testM("can't generate ints if the bound is less than zero")(for {
-        res1 <- random.nextInt(-10)
+        _ <- random.nextInt(-10)
       } yield assert(true)(equalTo(true))) @@ failure,
       testM("can generate ints in a range")(for {
         res1 <- random.between(4, 70)
@@ -124,7 +140,7 @@ object SeedRandomSpec extends DefaultRunnableSpec {
       testM(
         "can't generate ints if the first value is greater than the second"
       )(for {
-        res1 <- random.between(10, 0)
+        _ <- random.between(10, 0)
       } yield assert(true)(equalTo(true))) @@ failure,
       testM("can generate longs in a range")(for {
         res1 <- random.between(8L, 50L)
