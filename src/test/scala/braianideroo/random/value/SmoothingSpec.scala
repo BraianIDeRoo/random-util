@@ -16,52 +16,96 @@
 
 package braianideroo.random.value
 
-import zio.ZIO
+import zio.{Has, ZIO, ZLayer}
 import zio.test.Assertion._
 import zio.test.{DefaultRunnableSpec, ZSpec, _}
 
 object SmoothingSpec extends DefaultRunnableSpec {
 
-  val probabilities: Probabilities[String] =
+  val probabilities: Map[String, Double] =
     Map("something" -> 1, "pineapple" -> 2, "car" -> 0)
 
-  val s: Spec[Probabilities[String], TestFailure[Nothing], TestSuccess] =
+  val probabilitiesLayer
+    : ZLayer[Any, Nothing, Has[Probabilities[Any, String]]] =
+    ZLayer.fromEffect(for {
+      res <- ZIO
+        .foreach(probabilities)(
+          x => Probability.make[Any](x._2).map(y => (x._1, y))
+        )
+        .map(_.toMap)
+    } yield res)
+
+  val s
+    : Spec[Has[Probabilities[Any, String]], TestFailure[Nothing], TestSuccess] =
     suite("Smoothing suite")(
       testM("using noSmoothing doesn't affect the outcome") {
         for {
-          probs <- ZIO.access[Probabilities[String]](x => x)
-          res <- probs.smooth(Smoothing.noSmoothing)
-        } yield assert(res)(equalTo(probs))
+          probs <- ZIO.access[Has[Probabilities[Any, String]]](_.get)
+          _ <- probs.smooth(Smoothing.noSmoothing)
+          aux1 = probs.get("something")
+          base1 = aux1.get.baseProbability
+          prob1 <- aux1.get.probability
+          aux2 = probs.get("pineapple")
+          base2 = aux2.get.baseProbability
+          prob2 <- aux2.get.probability
+          aux3 = probs.get("car")
+          base3 = aux3.get.baseProbability
+          prob3 <- aux3.get.probability
+        } yield
+          assert(base1)(equalTo(1.0)) &&
+            assert(prob1)(equalTo(1.0)) &&
+            assert(base2)(equalTo(2.0)) &&
+            assert(prob2)(equalTo(2.0)) &&
+            assert(base3)(equalTo(0.0)) &&
+            assert(prob3)(equalTo(0.0))
       },
       testM("can smooth an iterable of probabilities with prior") {
         for {
-          probs <- ZIO.access[Probabilities[String]](x => x)
-          res <- probs.smooth(Smoothing.priorSmoothing(0.1))
+          probs <- ZIO.access[Has[Probabilities[Any, String]]](_.get)
+          _ <- probs.smooth(Smoothing.priorSmoothing(0.1))
+          aux1 = probs.get("something")
+          base1 = aux1.get.baseProbability
+          prob1 <- aux1.get.probability
+          aux2 = probs.get("pineapple")
+          base2 = aux2.get.baseProbability
+          prob2 <- aux2.get.probability
+          aux3 = probs.get("car")
+          base3 = aux3.get.baseProbability
+          prob3 <- aux3.get.probability
         } yield
-          assert(res.get("something"))(equalTo(Some(1.1))) &&
-            assert(res.get("pineapple"))(equalTo(Some(2.1))) &&
-            assert(res.get("car"))(equalTo(Some(0.1)))
+          assert(base1)(equalTo(1.0)) &&
+            assert(prob1)(equalTo(1.1)) &&
+            assert(base2)(equalTo(2.0)) &&
+            assert(prob2)(equalTo(2.1)) &&
+            assert(base3)(equalTo(0.0)) &&
+            assert(prob3)(equalTo(0.1))
       },
       testM(
         "can smooth an iterable of probabilities with good turing " +
           "smoothing"
       ) {
         for {
-          probs <- ZIO.access[Probabilities[String]](x => x)
-          res <- probs.smooth(Smoothing.goodTuringSmoothing)
+          probs <- ZIO.access[Has[Probabilities[Any, String]]](_.get)
+          _ <- probs.smooth(Smoothing.goodTuringSmoothing)
+          aux1 = probs.get("something")
+          base1 = aux1.get.baseProbability
+          prob1 <- aux1.get.probability
+          aux2 = probs.get("pineapple")
+          base2 = aux2.get.baseProbability
+          prob2 <- aux2.get.probability
+          aux3 = probs.get("car")
+          base3 = aux3.get.baseProbability
+          prob3 <- aux3.get.probability
         } yield
-          assert(res)(
-            equalTo(
-              Map(
-                "something" -> 1.0,
-                "pineapple" -> 2.0,
-                "car" -> 0.3333333333333333
-              )
-            )
-          )
+          assert(base1)(equalTo(1.0)) &&
+            assert(prob1)(equalTo(1.0)) &&
+            assert(base2)(equalTo(2.0)) &&
+            assert(prob2)(equalTo(2.0)) &&
+            assert(base3)(equalTo(0.0)) &&
+            assert(prob3)(equalTo(0.3333333333333333))
       }
     )
 
   override def spec: ZSpec[_root_.zio.test.environment.TestEnvironment, Any] =
-    s.provide(probabilities)
+    s.provideLayer(probabilitiesLayer)
 }

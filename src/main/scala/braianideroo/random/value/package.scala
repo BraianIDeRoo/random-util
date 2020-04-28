@@ -22,66 +22,97 @@ import zio.{IO, ZIO}
 package object value {
   type RandomValue[R, E, A] = ZIO[SeedRandom with R, E, A]
   type RandomVIO[E, A] = RandomValue[Any, E, A]
-  type Probabilities[A] = Map[A, Double]
-  type SmoothF[A] = ZIO[Probabilities[A], Nothing, Probabilities[A]]
+  type Probabilities[R, A] = Map[A, Probability[R]]
+  type SmoothF[R, A] = ZIO[Probabilities[R, A], Nothing, Unit]
 
-  case class Probability[A](value: A, probability: Double)
+  case class Element[R, A](value: A, probability: Probability[R])
 
   object RandomValue {
 
-    def fromProbabilityIterable[A](
-      iterable: Iterable[Probability[A]]
-    ): RandomVIO[Nothing, Option[A]] = {
-      val total = iterable.map(_.probability).sum
+    def fromElementIterable[R, A](
+      iterable: Iterable[Element[R, A]]
+    ): RandomValue[R, Nothing, Option[A]] = {
 
-      @scala.annotation.tailrec
-      def inner(probabilities: Iterable[Probability[A]],
-                randomValue: Double): Option[A] =
-        probabilities.headOption match {
-          case Some(probability) =>
-            if (randomValue < probability.probability) Some(probability.value)
-            else
-              inner(probabilities.tail, randomValue - probability.probability)
-          case None => None
+      def inner(elements: Iterable[Element[R, A]],
+                randomValue: Double): ZIO[R, Nothing, Option[A]] =
+        elements.headOption match {
+          case Some(element) =>
+            for {
+              prob <- element.probability.probability
+              aux <- if (randomValue < prob)
+                ZIO.some(element.value)
+              else inner(elements.tail, randomValue - prob)
+            } yield aux
+          case None => ZIO.none
         }
 
       for {
+        total <- ZIO
+          .foreach(iterable)(x => x.probability.probability)
+          .map(_.sum)
         randomValue <- random.between(0D, total).fold(_ => None, s => Some(s))
-        res = randomValue match {
+        res <- randomValue match {
           case Some(value) => inner(iterable, value)
-          case None        => None
+          case None        => ZIO.none
         }
       } yield res
     }
 
-    def fromIterable[A](iterable: Iterable[A]): RandomVIO[Nothing, Option[A]] =
-      fromProbabilityIterable(iterable.map(x => Probability(x, 10)))
+    def fromIterable[R, A](
+      iterable: Iterable[A]
+    ): RandomValue[R, Nothing, Option[A]] =
+      for {
+        elements <- ZIO.foreach(iterable)(
+          x =>
+            for {
+              prob <- Probability.make[R](1)
+            } yield Element(x, prob)
+        )
+        res <- fromElementIterable(elements)
+      } yield res
 
-    def fromMap[A](map: Probabilities[A]): RandomVIO[Nothing, Option[A]] = {
-      fromProbabilityIterable(map.map(x => Probability(x._1, x._2)))
-    }
+    def fromMap[R, A](
+      map: Probabilities[R, A]
+    ): RandomValue[R, Nothing, Option[A]] =
+      fromElementIterable(map.map(x => Element(x._1, x._2)))
   }
 
   object Smoothing {
-    def noSmoothing[A]: SmoothF[A] = ZIO.access[Probabilities[A]](x => x)
+    private def smoothingModifier[R](v: Double): Modifier[R] =
+      new Modifier[R] {
+        override def value: ZIO[R, Nothing, Option[Double]] =
+          ZIO.some(v)
+      }
 
-    def priorSmoothing[A](prior: Double): SmoothF[A] =
-      for {
-        probabilities <- ZIO.access[Probabilities[A]](x => x)
-        res = probabilities.map(x => (x._1, x._2 + prior))
-      } yield res
+    def noSmoothing[R, A]: SmoothF[R, A] = ZIO.unit
 
-    def goodTuringSmoothing[A]: SmoothF[A] =
+    def priorSmoothing[R, A](prior: Double): SmoothF[R, A] =
       for {
-        probabilities <- ZIO.access[Probabilities[A]](x => x)
-        n1 = probabilities.count(_._2 == 1)
-        n0 = n1 / probabilities.values.sum
-        res = probabilities.map(x => (x._1, if (x._2 == 0) n0 else x._2))
-      } yield res
+        probabilities <- ZIO.access[Probabilities[R, A]](x => x)
+        modifier = smoothingModifier[R](prior)
+        _ <- ZIO.foreach(probabilities)(x => x._2.addModifier(modifier))
+      } yield ()
+
+    // it only takes into account base probability, otherwise it would have to
+    // recalculate the smoothing for every different R
+    def goodTuringSmoothing[R, A]: SmoothF[R, A] =
+      for {
+        probabilities <- ZIO.access[Probabilities[R, A]](x => x)
+        n1 = probabilities.map(x => x._2.baseProbability).count(_ == 1)
+        calculated = probabilities.map(x => (x._1, x._2.baseProbability))
+        total = calculated.values.sum
+        n0 = n1 / total
+        modifier0 = smoothingModifier[R](n0)
+        _ <- ZIO.foreach_(probabilities)(
+          x =>
+            if (calculated(x._1) == 0) x._2.addModifier(modifier0)
+            else ZIO.succeed(())
+        )
+      } yield ()
   }
 
-  implicit class ProbabilitiesHelper[A](value: Probabilities[A]) {
-    def smooth(smoothF: SmoothF[A]): IO[Nothing, Probabilities[A]] =
+  implicit class ProbabilitiesHelper[R, A](value: Probabilities[R, A]) {
+    def smooth(smoothF: SmoothF[R, A]): IO[Nothing, Unit] =
       smoothF.provide(value)
   }
 }
