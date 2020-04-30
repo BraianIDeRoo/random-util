@@ -29,6 +29,16 @@ package object value {
 
   object RandomValue {
 
+    def fromSimpleIterable[A](
+      iterable: Iterable[(A, Double)]
+    ): RandomVIO[Nothing, Option[A]] =
+      for {
+        aux <- ZIO.foreach(iterable)(
+          x => Probability.make[Any](x._2).map(y => Element(x._1, y))
+        )
+        res <- fromElementIterable(aux)
+      } yield res
+
     def fromElementIterable[R, A](
       iterable: Iterable[Element[R, A]]
     ): RandomValue[R, Nothing, Option[A]] = {
