@@ -31,7 +31,7 @@ object SeedRandomSpec extends DefaultRunnableSpec {
   val seedRandom: ZLayer[Any, Nothing, Has[SeedRandom.Service]] =
     seedLayer >>> braianideroo.random.SeedRandom.live
 
-  val s: Spec[SeedRandom, TestFailure[Nothing], TestSuccess] =
+  val s: Spec[SeedRandom, TestFailure[SeedRandomError], TestSuccess] =
     suite("SeedRandom suite")(
       testM("can generate random boolean values")(
         for {
@@ -87,9 +87,9 @@ object SeedRandomSpec extends DefaultRunnableSpec {
       ),
       testM("can generate ints")(
         for {
-          res1 <- random.nextInt()
-          res2 <- random.nextInt()
-          res3 <- random.nextInt()
+          res1 <- random.nextInt
+          res2 <- random.nextInt
+          res3 <- random.nextInt
         } yield
           assert(res1)(equalTo(906153272)) &&
             assert(res2)(equalTo(1817908311)) &&
@@ -97,9 +97,9 @@ object SeedRandomSpec extends DefaultRunnableSpec {
       ),
       testM("can generate longs")(
         for {
-          res1 <- random.nextLong()
-          res2 <- random.nextLong()
-          res3 <- random.nextLong()
+          res1 <- random.nextLong
+          res2 <- random.nextLong
+          res3 <- random.nextLong
         } yield
           assert(res1)(equalTo(3891898670221300823L)) &&
             assert(res2)(equalTo(1155091113906380054L)) &&
@@ -107,7 +107,7 @@ object SeedRandomSpec extends DefaultRunnableSpec {
       )
     )
 
-  val s2: Spec[SeedRandom, TestFailure[Throwable], TestSuccess] =
+  val s2: Spec[SeedRandom, TestFailure[SeedRandomError], TestSuccess] =
     suite("SeedRandom throwable suite")(
       testM("can generate doubles in a range")(for {
         res1 <- random.between(0D, 0.5D)
