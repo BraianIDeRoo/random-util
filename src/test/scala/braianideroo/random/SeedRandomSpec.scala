@@ -33,6 +33,9 @@ object SeedRandomSpec extends DefaultRunnableSpec {
 
   val s: Spec[SeedRandom, TestFailure[SeedRandomError], TestSuccess] =
     suite("SeedRandom suite")(
+      testM("can add seeds")(for {
+        seedId <- random.addSeed(4562497L)
+      } yield assert(seedId)(equalTo(1))),
       testM("can generate random boolean values")(
         for {
           res1 <- random.nextBoolean
@@ -104,6 +107,15 @@ object SeedRandomSpec extends DefaultRunnableSpec {
           assert(res1)(equalTo(3891898670221300823L)) &&
             assert(res2)(equalTo(1155091113906380054L)) &&
             assert(res3)(equalTo(5257191817557221304L))
+      ),
+      testM("can generate random boolean values with an specific Seed")(
+        for {
+          seedId <- random.addSeed(4562497L)
+          res1 <- random.nextBooleanWithSeed(seedId)
+          res2 <- random.nextBooleanWithSeed(seedId)
+        } yield
+          assert(res1)(equalTo(true)) &&
+            assert(res2)(equalTo(false))
       )
     )
 
@@ -152,7 +164,15 @@ object SeedRandomSpec extends DefaultRunnableSpec {
       } yield assert(res1)(equalTo(5L))) @@ failure,
       testM("can generate strings")(for {
         res1 <- random.nextString(5)
-      } yield assert(res1)(equalTo("꺞㩢밠囧ㅊ")))
+      } yield assert(res1)(equalTo("꺞㩢밠囧ㅊ"))),
+      testM("can't generate random boolean values with an invalid Seed")(
+        for {
+          res1 <- random.nextBooleanWithSeed(1)
+          res2 <- random.nextBooleanWithSeed(1)
+        } yield
+          assert(res1)(equalTo(true)) &&
+            assert(res2)(equalTo(false))
+      ) @@ failure
     )
 
   override def spec: ZSpec[_root_.zio.test.environment.TestEnvironment, Any] =
