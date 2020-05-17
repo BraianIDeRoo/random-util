@@ -100,7 +100,9 @@ package object value {
       for {
         probabilities <- ZIO.access[Probabilities[R, A]](x => x)
         modifier = smoothingModifier[R](prior)
-        _ <- ZIO.foreach(probabilities)(x => x._2.addModifier(modifier))
+        _ <- ZIO.foreach(probabilities)(
+          x => x._2.addModifier("smoothing", modifier)
+        )
       } yield ()
 
     // it only takes into account base probability, otherwise it would have to
@@ -115,7 +117,7 @@ package object value {
         modifier0 = smoothingModifier[R](n0)
         _ <- ZIO.foreach_(probabilities)(
           x =>
-            if (calculated(x._1) == 0) x._2.addModifier(modifier0)
+            if (calculated(x._1) == 0) x._2.addModifier("smoothing", modifier0)
             else ZIO.succeed(())
         )
       } yield ()
