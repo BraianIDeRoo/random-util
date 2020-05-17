@@ -32,6 +32,11 @@ class Probability[R] private (val baseProbability: Double,
   def modifiers: ZIO[Any, Nothing, Map[String, List[Modifier[R]]]] =
     _modifiers.get
 
+  def modifiers(
+    identifier: String
+  ): ZIO[Any, Nothing, Option[List[Modifier[R]]]] =
+    _modifiers.get.map(_.get(identifier))
+
   def addModifier(identifier: String,
                   modifier: Modifier[R]): ZIO[Any, Nothing, Unit] =
     for {
