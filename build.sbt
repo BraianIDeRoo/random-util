@@ -23,6 +23,13 @@ inThisBuild(
 )
 ThisBuild / scalaVersion := "2.13.2"
 
+publishTo := Some(
+  if (isSnapshot.value)
+    Opts.resolver.sonatypeSnapshots
+  else
+    Opts.resolver.sonatypeStaging
+)
+
 val zioVersion = "1.0.0-RC19-2"
 
 val randomUtil = crossProject(JSPlatform, JVMPlatform)
@@ -45,14 +52,4 @@ val randomUtil = crossProject(JSPlatform, JVMPlatform)
 lazy val root = project
   .in(file("."))
   .aggregate(randomUtil.js, randomUtil.jvm)
-  .settings(
-    scalaVersion := "2.13.2",
-    publishTo := Some(
-      if (isSnapshot.value)
-        Opts.resolver.sonatypeSnapshots
-      else
-        Opts.resolver.sonatypeStaging
-    ),
-    publish := {},
-    publishLocal := {}
-  )
+  .settings(scalaVersion := "2.13.2", publish := {}, publishLocal := {})
