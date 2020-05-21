@@ -23,13 +23,6 @@ inThisBuild(
 )
 ThisBuild / scalaVersion := "2.13.2"
 
-publishTo in ThisBuild := Some(
-  if (isSnapshot.value)
-    Opts.resolver.sonatypeSnapshots
-  else
-    Opts.resolver.sonatypeStaging
-)
-
 val zioVersion = "1.0.0-RC19-2"
 
 val randomUtil = crossProject(JSPlatform, JVMPlatform)
@@ -42,7 +35,13 @@ val randomUtil = crossProject(JSPlatform, JVMPlatform)
       "dev.zio" %%% "zio-test" % zioVersion % "test",
       "dev.zio" %%% "zio-test-sbt" % zioVersion % "test"
     ),
-    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
+    publishTo := Some(
+      if (isSnapshot.value)
+        Opts.resolver.sonatypeSnapshots
+      else
+        Opts.resolver.sonatypeStaging
+    )
   )
   .jsSettings(
     scalaJSUseMainModuleInitializer := true,
