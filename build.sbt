@@ -23,7 +23,7 @@ inThisBuild(
 )
 ThisBuild / scalaVersion := "2.13.2"
 
-publishTo := Some(
+publishTo in ThisBuild := Some(
   if (isSnapshot.value)
     Opts.resolver.sonatypeSnapshots
   else
