@@ -36,10 +36,7 @@ object ProbabilitySpec extends DefaultRunnableSpec {
       testM("can add a modifier")(
         for {
           prob <- Probability.make[Int](0.5)
-          modifier = new Modifier[Int] {
-            override def value: ZIO[Int, Nothing, Option[Double]] =
-              ZIO.succeed(Some(1))
-          }
+          modifier = Modifier[Int](ZIO.succeed(Some(1)))
           _ <- prob.addModifier("test", modifier)
           testModList <- prob.modifiers("test")
           modList <- prob.modifiers
@@ -51,10 +48,7 @@ object ProbabilitySpec extends DefaultRunnableSpec {
       testM("can remove a modifier")(
         for {
           prob <- Probability.make[Int](0.5)
-          modifier = new Modifier[Int] {
-            override def value: ZIO[Int, Nothing, Option[Double]] =
-              ZIO.succeed(Some(1))
-          }
+          modifier = Modifier[Int](ZIO.succeed(Some(1)))
           _ <- prob.addModifier("test", modifier)
           bool <- prob.removeModifier(modifier)
           testModList <- prob.modifiers("test")
@@ -67,14 +61,8 @@ object ProbabilitySpec extends DefaultRunnableSpec {
       testM("can remove modifiers with a modifier")(
         for {
           prob <- Probability.make[Int](0.5)
-          modifier1 = new Modifier[Int] {
-            override def value: ZIO[Int, Nothing, Option[Double]] =
-              ZIO.succeed(Some(1))
-          }
-          modifier2 = new Modifier[Int] {
-            override def value: ZIO[Int, Nothing, Option[Double]] =
-              ZIO.succeed(Some(2))
-          }
+          modifier1 = Modifier[Int](ZIO.succeed(Some(1)))
+          modifier2 = Modifier[Int](ZIO.succeed(Some(2)))
           _ <- prob.addModifier("test", modifier1)
           _ <- prob.addModifier("test", modifier2)
           bool <- prob.removeModifier("test")

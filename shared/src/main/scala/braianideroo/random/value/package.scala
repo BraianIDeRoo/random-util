@@ -89,10 +89,7 @@ package object value {
 
   object Smoothing {
     private def smoothingModifier[R](v: Double): Modifier[R] =
-      new Modifier[R] {
-        override def value: ZIO[R, Nothing, Option[Double]] =
-          ZIO.some(v)
-      }
+      Modifier(ZIO.some(v))
 
     def noSmoothing[R, A]: SmoothF[R, A] = ZIO.unit
 

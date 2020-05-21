@@ -128,7 +128,7 @@ object SeedRandomSpec extends DefaultRunnableSpec {
         "can't generate doubles if the first value is greater than the second"
       )(for {
         _ <- random.between(0.5D, 0D)
-      } yield assert(true)(equalTo(true))) @@ failure,
+      } yield assert(true)(equalTo(true))) @@ failing,
       testM("can generate floats in a range")(for {
         res1 <- random.between(0F, 0.5F)
       } yield assert(res1)(equalTo(0.10549012F))),
@@ -136,16 +136,16 @@ object SeedRandomSpec extends DefaultRunnableSpec {
         "can't generate floats if the first value is greater than the second"
       )(for {
         _ <- random.between(0.5F, 0F)
-      } yield assert(true)(equalTo(true))) @@ failure,
+      } yield assert(true)(equalTo(true))) @@ failing,
       testM("can generate ints in a range between 0 and N")(for {
         res1 <- random.nextInt(10)
       } yield assert(res1)(equalTo(6))),
       testM("can't generate ints if the bound is equal zero")(for {
         _ <- random.nextInt(0)
-      } yield assert(true)(equalTo(true))) @@ failure,
+      } yield assert(true)(equalTo(true))) @@ failing,
       testM("can't generate ints if the bound is less than zero")(for {
         _ <- random.nextInt(-10)
-      } yield assert(true)(equalTo(true))) @@ failure,
+      } yield assert(true)(equalTo(true))) @@ failing,
       testM("can generate ints in a range")(for {
         res1 <- random.between(4, 70)
       } yield assert(res1)(equalTo(38))),
@@ -153,7 +153,7 @@ object SeedRandomSpec extends DefaultRunnableSpec {
         "can't generate ints if the first value is greater than the second"
       )(for {
         _ <- random.between(10, 0)
-      } yield assert(true)(equalTo(true))) @@ failure,
+      } yield assert(true)(equalTo(true))) @@ failing,
       testM("can generate longs in a range")(for {
         res1 <- random.between(8L, 50L)
       } yield assert(res1)(equalTo(48L))),
@@ -161,7 +161,7 @@ object SeedRandomSpec extends DefaultRunnableSpec {
         "can't generate longs if the first value is greater than the second"
       )(for {
         res1 <- random.between(50L, 2L)
-      } yield assert(res1)(equalTo(5L))) @@ failure,
+      } yield assert(res1)(equalTo(5L))) @@ failing,
       testM("can generate strings")(for {
         res1 <- random.nextString(5)
       } yield assert(res1)(equalTo("꺞㩢밠囧ㅊ"))),
@@ -172,7 +172,7 @@ object SeedRandomSpec extends DefaultRunnableSpec {
         } yield
           assert(res1)(equalTo(true)) &&
             assert(res2)(equalTo(false))
-      ) @@ failure
+      ) @@ failing
     )
 
   override def spec: ZSpec[_root_.zio.test.environment.TestEnvironment, Any] =

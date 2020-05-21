@@ -18,6 +18,4 @@ package braianideroo.random.value
 
 import zio.ZIO
 
-trait Modifier[R] {
-  def value: ZIO[R, Nothing, Option[Double]]
-}
+case class Modifier[R](value: ZIO[R, Nothing, Option[Double]])
