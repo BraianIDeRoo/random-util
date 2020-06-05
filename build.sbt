@@ -25,6 +25,8 @@ ThisBuild / scalaVersion := "2.13.2"
 
 val zioVersion = "1.0.0-RC20"
 
+skip in publish := true
+
 val randomUtil = crossProject(JSPlatform, JVMPlatform)
   .in(file("."))
   .settings(
