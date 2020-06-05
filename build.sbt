@@ -29,7 +29,7 @@ val randomUtil = crossProject(JSPlatform, JVMPlatform)
   .in(file("."))
   .settings(
     name := "random-util",
-    version := "0.5.1",
+    version := "0.5.2",
     libraryDependencies ++= Seq(
       "dev.zio" %%% "zio" % zioVersion,
       "dev.zio" %%% "zio-test" % zioVersion % "test",
