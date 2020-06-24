@@ -53,9 +53,9 @@ object RandomValueSpec extends DefaultRunnableSpec {
         res2 <- RandomValue.fromMap(map)
         res3 <- RandomValue.fromMap(map)
       } yield
-        assert(res1)(equalTo(Some("B"))) &&
-          assert(res2)(equalTo(Some("A"))) &&
-          assert(res3)(equalTo(Some("B")))
+        assert(res1)(equalTo("B")) &&
+          assert(res2)(equalTo("A")) &&
+          assert(res3)(equalTo("B"))
     ),
     testM("can randomly select from a list of elements")(
       for {
@@ -65,11 +65,60 @@ object RandomValueSpec extends DefaultRunnableSpec {
         res3 <- RandomValue.fromIterable[Any, String](list)
         res4 <- RandomValue.fromIterable[Any, String](list)
       } yield
-        assert(res1)(equalTo(Some("A"))) &&
-          assert(res2)(equalTo(Some("A"))) &&
-          assert(res3)(equalTo(Some("A"))) &&
-          assert(res4)(equalTo(Some("A")))
-    )
+        assert(res1)(equalTo("A")) &&
+          assert(res2)(equalTo("A")) &&
+          assert(res3)(equalTo("A")) &&
+          assert(res4)(equalTo("A"))
+    ),
+    testM("can randomly select a list of elements from a RandomValue") {
+      val list = RandomValue.fromIterable[Any, String](
+        List("A", "B", "C", "D", "E", "F", "G")
+      )
+      val quantity = RandomValue.fromSimpleIterable(List((3, 1D)))
+      for {
+        res <- RandomValue.fromMultipleRandomValue(list, quantity)
+      } yield
+        assert(res.length)(equalTo(3)) &&
+          assert(res.head)(equalTo("A")) &&
+          assert(res(1))(equalTo("B")) &&
+          assert(res(2))(equalTo("A"))
+    },
+    testM("can randomly select a list of weighted elements") {
+      val list: Seq[(String, Double)] =
+        List(
+          ("A", 1),
+          ("B", 1),
+          ("C", 1),
+          ("D", 1),
+          ("E", 1),
+          ("F", 1),
+          ("G", 1)
+        )
+      val quantity = 3
+      for {
+        res <- RandomValue.fromMultipleSimple(list, quantity)
+      } yield
+        assert(res.length)(equalTo(3)) &&
+          assert(res.head)(equalTo("A")) &&
+          assert(res(1))(equalTo("B")) &&
+          assert(res(2))(equalTo("A"))
+    },
+    testM("can randomly select a list of simple elements") {
+      val list = List("A", "B", "C", "D", "E", "F", "G")
+      val quantity = 2
+      for {
+        res <- RandomValue.fromMultiple(list, quantity)
+      } yield
+        assert(res.length)(equalTo(2)) &&
+          assert(res.head)(equalTo("A")) &&
+          assert(res(1))(equalTo("B"))
+    },
+    testM("can create a RandomValue from a single element") {
+      val element = "hmmm"
+      for {
+        res <- RandomValue.fromSingle(element)
+      } yield assert(res)(equalTo("hmmm"))
+    }
   )
 
   override def spec: ZSpec[_root_.zio.test.environment.TestEnvironment, Any] =

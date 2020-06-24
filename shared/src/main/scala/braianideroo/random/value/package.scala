@@ -31,7 +31,7 @@ package object value {
 
     def fromSimpleIterable[A](
       iterable: Iterable[(A, Double)]
-    ): RandomVIO[Nothing, Option[A]] =
+    ): RandomVIO[Nothing, A] =
       for {
         aux <- ZIO.foreach(iterable)(
           x => Probability.make[Any](x._2).map(y => Element(x._1, y))
@@ -41,7 +41,7 @@ package object value {
 
     def fromElementIterable[R, A](
       iterable: Iterable[Element[R, A]]
-    ): RandomValue[R, Nothing, Option[A]] = {
+    ): RandomValue[R, Nothing, A] = {
 
       def inner(elements: Iterable[Element[R, A]],
                 randomValue: Double): ZIO[R, Nothing, Option[A]] =
@@ -60,17 +60,12 @@ package object value {
         total <- ZIO
           .foreach(iterable)(x => x.probability.probability)
           .map(_.sum)
-        randomValue <- random.between(0D, total).fold(_ => None, s => Some(s))
-        res <- randomValue match {
-          case Some(value) => inner(iterable, value)
-          case None        => ZIO.none
-        }
+        randomValue <- random.between(0D, total).catchAll(_ => ZIO.succeed(0D))
+        res <- inner(iterable, randomValue).map(_.get)
       } yield res
     }
 
-    def fromIterable[R, A](
-      iterable: Iterable[A]
-    ): RandomValue[R, Nothing, Option[A]] =
+    def fromIterable[R, A](iterable: Iterable[A]): RandomValue[R, Nothing, A] =
       for {
         elements <- ZIO.foreach(iterable)(
           x =>
@@ -81,10 +76,35 @@ package object value {
         res <- fromElementIterable(elements)
       } yield res
 
-    def fromMap[R, A](
-      map: Probabilities[R, A]
-    ): RandomValue[R, Nothing, Option[A]] =
+    def fromMap[R, A](map: Probabilities[R, A]): RandomValue[R, Nothing, A] =
       fromElementIterable(map.map(x => Element(x._1, x._2)))
+
+    def fromMultipleRandomValue[R, A](
+      randomValue: RandomValue[R, Nothing, A],
+      quantity: RandomValue[R, Nothing, Int]
+    ): RandomValue[R, Nothing, List[A]] =
+      for {
+        q <- quantity
+        aux = ZIO.replicate(q)(randomValue)
+        res <- ZIO.foreach(aux)(x => x)
+      } yield res
+
+    def fromMultipleSimple[A](iterable: Iterable[(A, Double)],
+                              quantity: Int): RandomVIO[Nothing, List[A]] = {
+      val iterableValue = fromSimpleIterable[A](iterable)
+      val q = fromIterable[Any, Int](List(quantity))
+      fromMultipleRandomValue(iterableValue, q)
+    }
+
+    def fromMultiple[A](iterable: Iterable[A],
+                        quantity: Int): RandomVIO[Nothing, List[A]] = {
+      val iterableValue = fromIterable[Any, A](iterable)
+      val q = fromIterable[Any, Int](List(quantity))
+      fromMultipleRandomValue(iterableValue, q)
+    }
+
+    def fromSingle[A](value: A): RandomVIO[Nothing, A] =
+      fromIterable[Any, A](List(value))
   }
 
   object Smoothing {
